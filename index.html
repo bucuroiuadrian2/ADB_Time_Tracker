@@ -565,6 +565,30 @@
             background-clip: text;
             margin-bottom: 15px;
         }
+        /* Data Management */
+.data-management {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.data-info {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+    padding: 12px;
+    background: var(--very-light-gray);
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-blue);
+}
+
+@media (min-width: 640px) {
+    .data-management {
+        flex-direction: row;
+    }
+}
     </style>
 </head>
 <body>
@@ -1112,6 +1136,132 @@
         renderHistory();
         renderCalendar();
         restoreActiveSession();
+        // Data Export/Import Functions
+function exportData() {
+    const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        sessions: sessions.map(s => ({
+            clockIn: s.clockIn.toISOString(),
+            clockOut: s.clockOut.toISOString(),
+            duration: s.duration,
+            name: s.name,
+            location: s.location
+        })),
+        metadata: {
+            totalSessions: sessions.length,
+            officeDays: sessions.filter(s => s.location === 'Office').length,
+            homeDays: sessions.filter(s => s.location === 'Home').length
+        }
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `timetracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    alert('Data exported successfully!');
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importData = JSON.parse(e.target.result);
+            
+            // Validate data structure
+            if (!importData.sessions || !Array.isArray(importData.sessions)) {
+                throw new Error('Invalid data format');
+            }
+
+            // Ask for confirmation
+            const confirmMsg = `Import ${importData.sessions.length} sessions?\n\nThis will ADD to your existing ${sessions.length} sessions.\n\nExport Date: ${new Date(importData.exportDate).toLocaleDateString()}`;
+            
+            if (!confirm(confirmMsg)) {
+                event.target.value = ''; // Reset file input
+                return;
+            }
+
+            // Convert dates back to Date objects and merge with existing sessions
+            const importedSessions = importData.sessions.map(s => ({
+                clockIn: new Date(s.clockIn),
+                clockOut: new Date(s.clockOut),
+                duration: s.duration,
+                name: s.name || 'Work',
+                location: s.location || 'Office'
+            }));
+
+            // Merge and sort by date
+            sessions = [...sessions, ...importedSessions].sort((a, b) => a.clockIn - b.clockIn);
+            
+            // Save to localStorage
+            localStorage.setItem('sessions', JSON.stringify(sessions));
+            
+            // Refresh displays
+            renderHistory();
+            renderCalendar();
+            
+            alert(`Successfully imported ${importedSessions.length} sessions!`);
+            
+        } catch (error) {
+            alert('Error importing data: ' + error.message + '\n\nPlease ensure you are importing a valid TimeTracker backup file.');
+        }
+        
+        event.target.value = ''; // Reset file input
+    };
+    
+    reader.readAsText(file);
+}
+
+function clearAllData() {
+    const confirmMsg = 'WARNING: This will permanently delete all your sessions!\n\nAre you absolutely sure?\n\nTip: Export your data first to create a backup.';
+    
+    if (!confirm(confirmMsg)) return;
+    
+    // Double confirmation
+    const doubleConfirm = confirm('Last chance! This cannot be undone.\n\nDelete all sessions?');
+    
+    if (!doubleConfirm) return;
+    
+    // Clear all data
+    sessions = [];
+    localStorage.removeItem('sessions');
+    localStorage.removeItem('activeClockIn');
+    localStorage.removeItem('activeSessionName');
+    localStorage.removeItem('activeLocation');
+    localStorage.removeItem('expectedWorkHours');
+    
+    // Reset UI
+    if (clockInTime) {
+        clockInTime = null;
+        if (window.timerInterval) {
+            clearInterval(window.timerInterval);
+        }
+        document.getElementById('status-dot').classList.remove('active');
+        document.getElementById('status-label').textContent = 'No Active Session';
+        document.getElementById('status-text').textContent = 'Ready to clock in';
+        document.getElementById('elapsed-time').textContent = '--:--:--';
+        document.getElementById('remaining-time').textContent = '--:--:--';
+        document.getElementById('clock-in-btn').disabled = false;
+        document.getElementById('clock-out-btn').disabled = true;
+        document.getElementById('check-btn').disabled = true;
+    }
+    
+    renderHistory();
+    renderCalendar();
+    
+    alert('All data has been cleared.');
+}
     </script>
 </body>
 </html>
