@@ -661,6 +661,24 @@
                 <div class="history-title">Recent Sessions</div>
             </div>
             <div id="session-list"></div>
+                      <h3 class="section-title">Data Management</h3>
+            <div class="card">
+                <div class="data-management">
+                    <button class="btn btn-secondary" onclick="exportData()">
+                        Export Data (JSON)
+                    </button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">
+                        Import Data (JSON)
+                    </button>
+                    <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+                    <button class="btn btn-danger" onclick="clearAllData()">
+                        Clear All Data
+                    </button>
+                </div>
+                <p class="data-info">
+                    Export your data to create a backup. Import previously exported data to restore your sessions.
+                </p>
+            </div>
         </div>
     </div>
 
