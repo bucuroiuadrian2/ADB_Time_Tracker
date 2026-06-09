@@ -22,8 +22,6 @@
     --border-color: #e2e8f0;
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    
-    /* Location colors */
     --office-color: #3182ce;
     --office-light: rgba(49, 130, 206, 0.1);
     --home-color: #ed8936;
@@ -62,7 +60,6 @@ body {
     margin: 0 auto;
 }
 
-/* Tabs */
 .tabs {
     display: flex;
     background: var(--white);
@@ -102,7 +99,6 @@ body {
     display: block;
 }
 
-/* Cards */
 .card {
     background: var(--white);
     border-radius: 8px;
@@ -119,7 +115,6 @@ body {
     margin-bottom: 0;
 }
 
-/* Inputs */
 .input-label {
     display: block;
     font-size: 13px;
@@ -148,10 +143,33 @@ select:focus, .text-input:focus {
 }
 
 .text-input {
-    margin-top: 8px;
+    margin-top: 0;
 }
 
-/* Location Selector */
+input[type="time"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--white);
+    transition: all 0.2s;
+}
+
+input[type="time"]:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.help-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    font-style: italic;
+}
+
 .location-selector {
     display: flex;
     gap: 8px;
@@ -175,7 +193,6 @@ select:focus, .text-input:focus {
     box-shadow: var(--shadow);
 }
 
-/* Office button (blue) */
 #office-btn.active {
     border-color: var(--office-color);
     background: var(--office-color);
@@ -192,7 +209,6 @@ select:focus, .text-input:focus {
     background: var(--office-light);
 }
 
-/* Home button (orange) */
 #home-btn.active {
     border-color: var(--home-color);
     background: var(--home-color);
@@ -209,7 +225,6 @@ select:focus, .text-input:focus {
     background: var(--home-light);
 }
 
-/* Status Indicator */
 .status-indicator {
     display: flex;
     align-items: center;
@@ -250,7 +265,6 @@ select:focus, .text-input:focus {
     margin-bottom: 16px;
 }
 
-/* Time Info */
 .time-info {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -281,7 +295,29 @@ select:focus, .text-input:focus {
     color: var(--primary-blue);
 }
 
-/* Buttons */
+.clock-out-info {
+    margin-top: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--secondary-blue));
+    border-radius: 8px;
+    text-align: center;
+}
+
+.clock-out-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.clock-out-time {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--white);
+}
+
 .button-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -338,7 +374,6 @@ select:focus, .text-input:focus {
     transform: scale(0.98);
 }
 
-/* Calendar */
 .calendar-header {
     display: flex;
     justify-content: space-between;
@@ -417,7 +452,6 @@ select:focus, .text-input:focus {
     color: var(--light-gray);
 }
 
-/* Location bar indicator */
 .calendar-day .location-bar {
     width: 100%;
     height: 4px;
@@ -447,7 +481,6 @@ select:focus, .text-input:focus {
     opacity: 0.7;
 }
 
-/* Stats */
 .stats-header {
     display: flex;
     justify-content: space-between;
@@ -521,7 +554,6 @@ select:focus, .text-input:focus {
     color: var(--home-color);
 }
 
-/* Charts */
 .chart-title {
     font-size: 16px;
     font-weight: 700;
@@ -529,7 +561,6 @@ select:focus, .text-input:focus {
     margin-bottom: 16px;
 }
 
-/* Session Cards */
 .session-card {
     background: var(--white);
     padding: 20px;
@@ -647,7 +678,6 @@ select:focus, .text-input:focus {
     background: #e53e3e;
 }
 
-/* Empty State */
 .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -659,7 +689,6 @@ select:focus, .text-input:focus {
     font-weight: 500;
 }
 
-/* Data Management */
 .data-management {
     display: flex;
     flex-direction: column;
@@ -678,23 +707,12 @@ select:focus, .text-input:focus {
     border-left: 3px solid var(--accent-blue);
 }
 
-/* Responsive */
 @media (max-width: 640px) {
-    .stats-row {
-        grid-template-columns: 1fr;
-    }
-    
-    .button-group {
-        grid-template-columns: 1fr;
-    }
-    
-    .time-info {
-        grid-template-columns: 1fr;
-    }
+    .stats-row { grid-template-columns: 1fr; }
+    .button-group { grid-template-columns: 1fr; }
+    .time-info { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 640px) {
-    .data-management {
-        flex-direction: row;
-    }
+    .data-management { flex-direction: row; }
 }
