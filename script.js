@@ -26,7 +26,6 @@ if ('Notification' in window && Notification.permission === 'default') {
 function handleSessionNameChange() {
     const select = document.getElementById('session-name-select');
     const customInput = document.getElementById('custom-session-name');
-
     if (select.value === 'Custom') {
         customInput.style.display = 'block';
         customInput.focus();
@@ -44,7 +43,7 @@ function setLocation(location) {
     document.getElementById('home-btn').classList.toggle('active', location === 'Home');
 }
 
-// Initialize custom input handler
+// Initialize
 window.addEventListener('DOMContentLoaded', function() {
     const customInput = document.getElementById('custom-session-name');
     if (customInput) {
@@ -52,7 +51,6 @@ window.addEventListener('DOMContentLoaded', function() {
             currentSessionName = this.value || 'Custom';
         });
     }
-
     const workHoursInput = document.getElementById('work-hours-input');
     if (workHoursInput) {
         workHoursInput.addEventListener('change', function() {
@@ -63,46 +61,55 @@ window.addEventListener('DOMContentLoaded', function() {
 
 // Format functions
 function formatTime(date) {
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const seconds = date.getSeconds().toString().padStart(2, '0');
-    return `${hours}:${minutes}:${seconds}`;
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    const s = date.getSeconds().toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
 }
 
 function formatTimeShort(date) {
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m}`;
 }
 
 function formatDate(date) {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    const d = date.getDate().toString().padStart(2, '0');
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
 }
 
 function formatDuration(ms) {
-    const hours = Math.floor(ms / (1000 * 60 * 60));
-    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-    return `${hours}h ${minutes}m ${seconds}s`;
+    const h = Math.floor(ms / (1000 * 60 * 60));
+    const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((ms % (1000 * 60)) / 1000);
+    return `${h}h ${m}m ${s}s`;
 }
 
 function formatDurationShort(ms) {
-    const hours = Math.floor(ms / (1000 * 60 * 60));
-    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const h = Math.floor(ms / (1000 * 60 * 60));
+    const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((ms % (1000 * 60)) / 1000);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-// Timer functions
+// Clock In
 function clockIn() {
-    clockInTime = new Date();
+    const manualTimeInput = document.getElementById('manual-clock-in');
+    const manualTime = manualTimeInput.value;
+
+    if (manualTime) {
+        const now = new Date();
+        const [hours, minutes] = manualTime.split(':');
+        clockInTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes), 0);
+    } else {
+        clockInTime = new Date();
+    }
+
     expectedWorkHours = parseFloat(document.getElementById('work-hours-input').value) || 8;
     notificationShown = false;
 
-    // Save to localStorage immediately
     localStorage.setItem('activeClockIn', clockInTime.toISOString());
     localStorage.setItem('activeSessionName', currentSessionName);
     localStorage.setItem('activeLocation', currentLocation);
@@ -114,32 +121,33 @@ function clockIn() {
     document.getElementById('clock-in-btn').disabled = true;
     document.getElementById('clock-out-btn').disabled = false;
     document.getElementById('check-btn').disabled = false;
-
-    // Reset display
+    document.getElementById('manual-time-section').style.display = 'none';
     document.getElementById('elapsed-time').textContent = '--:--:--';
     document.getElementById('remaining-time').textContent = '--:--:--';
+    manualTimeInput.value = '';
 
-    // Start notification check timer (runs in background, doesn't update UI)
+    updateExpectedClockOut();
+    document.getElementById('clock-out-info').style.display = 'block';
+
     startNotificationCheck();
 }
 
+// Clock Out
 function clockOut() {
     if (!clockInTime) return;
 
     const clockOutTime = new Date();
     const duration = clockOutTime - clockInTime;
-    const durationString = formatDuration(duration);
 
     sessions.push({
         clockIn: clockInTime,
         clockOut: clockOutTime,
-        duration: durationString,
+        duration: formatDuration(duration),
         name: currentSessionName,
         location: currentLocation
     });
 
     localStorage.setItem('sessions', JSON.stringify(sessions));
-    // Clear active session from localStorage
     localStorage.removeItem('activeClockIn');
     localStorage.removeItem('activeSessionName');
     localStorage.removeItem('activeLocation');
@@ -147,10 +155,8 @@ function clockOut() {
 
     clockInTime = null;
     notificationShown = false;
-    
-    if (window.notificationInterval) {
-        clearInterval(window.notificationInterval);
-    }
+
+    if (window.notificationInterval) clearInterval(window.notificationInterval);
 
     document.getElementById('status-dot').classList.remove('active');
     document.getElementById('status-label').textContent = 'No Active Session';
@@ -160,11 +166,14 @@ function clockOut() {
     document.getElementById('clock-in-btn').disabled = false;
     document.getElementById('clock-out-btn').disabled = true;
     document.getElementById('check-btn').disabled = true;
+    document.getElementById('manual-time-section').style.display = 'block';
+    document.getElementById('clock-out-info').style.display = 'none';
 
     renderHistory();
     renderCalendar();
 }
 
+// Check Duration
 function checkDuration() {
     if (!clockInTime) return;
 
@@ -174,37 +183,35 @@ function checkDuration() {
     const remaining = expectedMs - elapsed;
 
     document.getElementById('elapsed-time').textContent = formatDurationShort(elapsed);
-    
-    if (remaining > 0) {
-        document.getElementById('remaining-time').textContent = formatDurationShort(remaining);
-    } else {
-        document.getElementById('remaining-time').textContent = '00:00:00';
-    }
+    document.getElementById('remaining-time').textContent = remaining > 0 ? formatDurationShort(remaining) : '00:00:00';
+
+    updateExpectedClockOut();
 }
 
+function updateExpectedClockOut() {
+    if (!clockInTime) return;
+    const expectedMs = expectedWorkHours * 60 * 60 * 1000;
+    const expectedClockOut = new Date(clockInTime.getTime() + expectedMs);
+    document.getElementById('expected-clock-out').textContent = formatTimeShort(expectedClockOut);
+}
+
+// Notification check (background only, no UI updates)
 function startNotificationCheck() {
-    if (window.notificationInterval) {
-        clearInterval(window.notificationInterval);
-    }
-    
-    // Check every minute for notification (doesn't update UI)
+    if (window.notificationInterval) clearInterval(window.notificationInterval);
+
     window.notificationInterval = setInterval(function() {
         if (!clockInTime) {
             clearInterval(window.notificationInterval);
             return;
         }
+        const elapsed = new Date() - clockInTime;
+        const remaining = (expectedWorkHours * 60 * 60 * 1000) - elapsed;
 
-        const now = new Date();
-        const elapsed = now - clockInTime;
-        const expectedMs = expectedWorkHours * 60 * 60 * 1000;
-        const remaining = expectedMs - elapsed;
-
-        // Check if within 15 minutes of completion
         if (remaining < 15 * 60 * 1000 && remaining > 0 && !notificationShown) {
             showNotification();
             notificationShown = true;
         }
-    }, 60000); // Check every minute
+    }, 60000);
 }
 
 function showNotification() {
@@ -217,7 +224,7 @@ function showNotification() {
     }
 }
 
-// Restore active session if app was closed
+// Restore active session after app close
 function restoreActiveSession() {
     const savedClockIn = localStorage.getItem('activeClockIn');
     const savedSessionName = localStorage.getItem('activeSessionName');
@@ -230,7 +237,6 @@ function restoreActiveSession() {
         currentLocation = savedLocation || 'Office';
         expectedWorkHours = parseFloat(savedWorkHours) || 8;
 
-        // Restore UI state
         document.getElementById('status-dot').classList.add('active');
         document.getElementById('status-label').textContent = 'Active Session';
         document.getElementById('status-text').textContent = `Started at ${formatTime(clockInTime)}`;
@@ -238,10 +244,13 @@ function restoreActiveSession() {
         document.getElementById('clock-out-btn').disabled = false;
         document.getElementById('check-btn').disabled = false;
         document.getElementById('work-hours-input').value = expectedWorkHours;
+        document.getElementById('manual-time-section').style.display = 'none';
 
-        // Restore session name in dropdown
+        updateExpectedClockOut();
+        document.getElementById('clock-out-info').style.display = 'block';
+
         const select = document.getElementById('session-name-select');
-        if (savedSessionName === 'Work' || savedSessionName === 'Meeting' || savedSessionName === 'Break') {
+        if (['Work', 'Meeting', 'Break'].includes(savedSessionName)) {
             select.value = savedSessionName;
         } else {
             select.value = 'Custom';
@@ -249,11 +258,11 @@ function restoreActiveSession() {
             document.getElementById('custom-session-name').value = savedSessionName;
         }
 
-        // Restore location
         setLocation(currentLocation);
-
-        // Start notification check (doesn't update UI)
         startNotificationCheck();
+    } else {
+        document.getElementById('manual-time-section').style.display = 'block';
+        document.getElementById('clock-out-info').style.display = 'none';
     }
 }
 
@@ -261,38 +270,25 @@ function restoreActiveSession() {
 function switchTab(tabName) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-
     event.target.classList.add('active');
     document.getElementById(`${tabName}-tab`).classList.add('active');
-
     if (tabName === 'history') renderHistory();
     if (tabName === 'calendar') renderCalendar();
 }
 
-// History rendering
+// History
 function renderHistory() {
     const list = document.getElementById('session-list');
     document.getElementById('session-count').textContent = sessions.length;
 
-    // Calculate and display averages
     if (sessions.length > 0) {
-        const totalClockInMinutes = sessions.reduce((sum, session) => {
-            return sum + (session.clockIn.getHours() * 60 + session.clockIn.getMinutes());
-        }, 0);
-        const avgClockInMinutes = totalClockInMinutes / sessions.length;
-        const avgClockInHours = Math.floor(avgClockInMinutes / 60);
-        const avgClockInMins = Math.round(avgClockInMinutes % 60);
-        document.getElementById('avg-clock-in').textContent =
-            `${avgClockInHours.toString().padStart(2, '0')}:${avgClockInMins.toString().padStart(2, '0')}`;
+        const avgIn = sessions.reduce((s, x) => s + x.clockIn.getHours() * 60 + x.clockIn.getMinutes(), 0) / sessions.length;
+        const avgOut = sessions.reduce((s, x) => s + x.clockOut.getHours() * 60 + x.clockOut.getMinutes(), 0) / sessions.length;
 
-        const totalClockOutMinutes = sessions.reduce((sum, session) => {
-            return sum + (session.clockOut.getHours() * 60 + session.clockOut.getMinutes());
-        }, 0);
-        const avgClockOutMinutes = totalClockOutMinutes / sessions.length;
-        const avgClockOutHours = Math.floor(avgClockOutMinutes / 60);
-        const avgClockOutMins = Math.round(avgClockOutMinutes % 60);
+        document.getElementById('avg-clock-in').textContent =
+            `${Math.floor(avgIn / 60).toString().padStart(2, '0')}:${Math.round(avgIn % 60).toString().padStart(2, '0')}`;
         document.getElementById('avg-clock-out').textContent =
-            `${avgClockOutHours.toString().padStart(2, '0')}:${avgClockOutMins.toString().padStart(2, '0')}`;
+            `${Math.floor(avgOut / 60).toString().padStart(2, '0')}:${Math.round(avgOut % 60).toString().padStart(2, '0')}`;
     } else {
         document.getElementById('avg-clock-in').textContent = '--:--';
         document.getElementById('avg-clock-out').textContent = '--:--';
@@ -334,13 +330,12 @@ function renderHistory() {
 function renderCharts() {
     if (sessions.length === 0) return;
 
-    const recentSessions = sessions.slice(-14);
-    const labels = recentSessions.map(s => formatDate(s.clockIn));
-    const clockInTimes = recentSessions.map(s => s.clockIn.getHours() + s.clockIn.getMinutes() / 60);
-    const clockOutTimes = recentSessions.map(s => s.clockOut.getHours() + s.clockOut.getMinutes() / 60);
+    const recent = sessions.slice(-14);
+    const labels = recent.map(s => formatDate(s.clockIn));
+    const inTimes = recent.map(s => s.clockIn.getHours() + s.clockIn.getMinutes() / 60);
+    const outTimes = recent.map(s => s.clockOut.getHours() + s.clockOut.getMinutes() / 60);
 
-    // Calculate dynamic Y-axis range
-    const allTimes = [...clockInTimes, ...clockOutTimes];
+    const allTimes = [...inTimes, ...outTimes];
     const minTime = Math.floor(Math.min(...allTimes)) - 1;
     const maxTime = Math.ceil(Math.max(...allTimes)) + 1;
 
@@ -355,9 +350,9 @@ function renderCharts() {
             tooltip: {
                 callbacks: {
                     label: function(context) {
-                        const hours = Math.floor(context.parsed.y);
-                        const minutes = Math.round((context.parsed.y - hours) * 60);
-                        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                        const h = Math.floor(context.parsed.y);
+                        const m = Math.round((context.parsed.y - h) * 60);
+                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
                     }
                 }
             }
@@ -369,12 +364,12 @@ function renderCharts() {
                 ticks: {
                     stepSize: 0.5,
                     callback: function(value) {
-                        const hours = Math.floor(value);
-                        const minutes = Math.round((value - hours) * 60);
-                        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                        const h = Math.floor(value);
+                        const m = Math.round((value - h) * 60);
+                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
                     }
                 },
-                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                grid: { color: 'rgba(0,0,0,0.05)' }
             },
             x: {
                 grid: { display: false },
@@ -388,9 +383,9 @@ function renderCharts() {
         data: {
             labels,
             datasets: [{
-                data: clockInTimes,
+                data: inTimes,
                 borderColor: '#1e3a5f',
-                backgroundColor: 'rgba(30, 58, 95, 0.1)',
+                backgroundColor: 'rgba(30,58,95,0.1)',
                 borderWidth: 2,
                 fill: true,
                 tension: 0.3,
@@ -398,7 +393,7 @@ function renderCharts() {
                 pointBackgroundColor: '#1e3a5f',
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                pointHoverRadius: 6,
+                pointHoverRadius: 6
             }]
         },
         options: sharedOptions
@@ -409,9 +404,9 @@ function renderCharts() {
         data: {
             labels,
             datasets: [{
-                data: clockOutTimes,
+                data: outTimes,
                 borderColor: '#2c5282',
-                backgroundColor: 'rgba(44, 82, 130, 0.1)',
+                backgroundColor: 'rgba(44,82,130,0.1)',
                 borderWidth: 2,
                 fill: true,
                 tension: 0.3,
@@ -419,7 +414,7 @@ function renderCharts() {
                 pointBackgroundColor: '#2c5282',
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                pointHoverRadius: 6,
+                pointHoverRadius: 6
             }]
         },
         options: sharedOptions
@@ -435,7 +430,7 @@ function deleteSession(index) {
     }
 }
 
-// Calendar rendering
+// Calendar
 function renderCalendar() {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -446,11 +441,10 @@ function renderCalendar() {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysInPrevMonth = new Date(year, month, 0).getDate();
+    const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
 
     let html = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         .map(d => `<div class="calendar-day-header">${d}</div>`).join('');
-
-    let adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
 
     for (let i = adjustedFirstDay - 1; i >= 0; i--) {
         html += `<div class="calendar-day other-month">${daysInPrevMonth - i}</div>`;
@@ -459,32 +453,22 @@ function renderCalendar() {
     for (let day = 1; day <= daysInMonth; day++) {
         const dateString = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
-        // Find sessions for this day
         const daySessions = sessions.filter(s => {
             const d = new Date(s.clockIn);
-            const dStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-            return dStr === dateString;
+            return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}` === dateString;
         });
 
-        const hasSessions = daySessions.length > 0;
         const isSelected = selectedDate === dateString;
-
-        // Determine location indicator
         let locationBar = '';
-        if (hasSessions) {
+
+        if (daySessions.length > 0) {
             const hasOffice = daySessions.some(s => s.location === 'Office');
             const hasHome = daySessions.some(s => s.location === 'Home');
-            
-            if (hasOffice && hasHome) {
-                locationBar = '<div class="location-bar mixed"></div>';
-            } else if (hasOffice) {
-                locationBar = '<div class="location-bar office"></div>';
-            } else if (hasHome) {
-                locationBar = '<div class="location-bar home"></div>';
-            }
+            const barClass = hasOffice && hasHome ? 'mixed' : hasOffice ? 'office' : 'home';
+            locationBar = `<div class="location-bar ${barClass}"></div>`;
         }
 
-        html += `<div class="calendar-day ${hasSessions ? 'has-session' : ''} ${isSelected ? 'selected' : ''}" 
+        html += `<div class="calendar-day ${daySessions.length > 0 ? 'has-session' : ''} ${isSelected ? 'selected' : ''}"
                  onclick="selectDate('${dateString}')">
                     <span>${day}</span>
                     ${locationBar}
@@ -492,19 +476,13 @@ function renderCalendar() {
     }
 
     document.getElementById('calendar-grid').innerHTML = html;
-    
-    // Update office/home stats
     updateLocationStats();
-    
     if (selectedDate) renderCalendarSessions();
 }
 
 function updateLocationStats() {
-    const officeDays = sessions.filter(s => s.location === 'Office').length;
-    const homeDays = sessions.filter(s => s.location === 'Home').length;
-    
-    document.getElementById('office-days').textContent = officeDays;
-    document.getElementById('home-days').textContent = homeDays;
+    document.getElementById('office-days').textContent = sessions.filter(s => s.location === 'Office').length;
+    document.getElementById('home-days').textContent = sessions.filter(s => s.location === 'Home').length;
 }
 
 function selectDate(dateString) {
@@ -517,8 +495,7 @@ function renderCalendarSessions() {
 
     const dateSessions = sessions.filter(s => {
         const d = new Date(s.clockIn);
-        const dStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-        return dStr === selectedDate;
+        return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}` === selectedDate;
     });
 
     if (dateSessions.length === 0) {
@@ -526,8 +503,8 @@ function renderCalendarSessions() {
         return;
     }
 
-    const [yearStr, monthStr, dayStr] = selectedDate.split('-');
-    const date = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
+    const [y, m, d] = selectedDate.split('-');
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
 
     container.innerHTML = `
         <h3 class="section-title" style="margin-top: 16px;">
@@ -568,9 +545,9 @@ function nextMonth() {
     renderCalendar();
 }
 
-// Data Export/Import Functions
+// Export / Import / Clear
 function exportData() {
-    const exportData = {
+    const data = {
         version: '1.0',
         exportDate: new Date().toISOString(),
         sessions: sessions.map(s => ({
@@ -587,10 +564,8 @@ function exportData() {
         }
     };
 
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `timetracker-backup-${new Date().toISOString().split('T')[0]}.json`;
@@ -598,7 +573,6 @@ function exportData() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
     alert('Data exported successfully!');
 }
 
@@ -609,23 +583,15 @@ function importData(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            const importData = JSON.parse(e.target.result);
-            
-            // Validate data structure
-            if (!importData.sessions || !Array.isArray(importData.sessions)) {
-                throw new Error('Invalid data format');
-            }
+            const data = JSON.parse(e.target.result);
+            if (!data.sessions || !Array.isArray(data.sessions)) throw new Error('Invalid data format');
 
-            // Ask for confirmation
-            const confirmMsg = `Import ${importData.sessions.length} sessions?\n\nThis will ADD to your existing ${sessions.length} sessions.\n\nExport Date: ${new Date(importData.exportDate).toLocaleDateString()}`;
-            
-            if (!confirm(confirmMsg)) {
-                event.target.value = ''; // Reset file input
+            if (!confirm(`Import ${data.sessions.length} sessions?\n\nThis will ADD to your existing ${sessions.length} sessions.\n\nExport Date: ${new Date(data.exportDate).toLocaleDateString()}`)) {
+                event.target.value = '';
                 return;
             }
 
-            // Convert dates back to Date objects and merge with existing sessions
-            const importedSessions = importData.sessions.map(s => ({
+            const imported = data.sessions.map(s => ({
                 clockIn: new Date(s.clockIn),
                 clockOut: new Date(s.clockOut),
                 duration: s.duration,
@@ -633,52 +599,29 @@ function importData(event) {
                 location: s.location || 'Office'
             }));
 
-            // Merge and sort by date
-            sessions = [...sessions, ...importedSessions].sort((a, b) => a.clockIn - b.clockIn);
-            
-            // Save to localStorage
+            sessions = [...sessions, ...imported].sort((a, b) => a.clockIn - b.clockIn);
             localStorage.setItem('sessions', JSON.stringify(sessions));
-            
-            // Refresh displays
             renderHistory();
             renderCalendar();
-            
-            alert(`Successfully imported ${importedSessions.length} sessions!`);
-            
+            alert(`Successfully imported ${imported.length} sessions!`);
         } catch (error) {
-            alert('Error importing data: ' + error.message + '\n\nPlease ensure you are importing a valid TimeTracker backup file.');
+            alert('Error importing data: ' + error.message);
         }
-        
-        event.target.value = ''; // Reset file input
+        event.target.value = '';
     };
-    
     reader.readAsText(file);
 }
 
 function clearAllData() {
-    const confirmMsg = 'WARNING: This will permanently delete all your sessions!\n\nAre you absolutely sure?\n\nTip: Export your data first to create a backup.';
-    
-    if (!confirm(confirmMsg)) return;
-    
-    // Double confirmation
-    const doubleConfirm = confirm('Last chance! This cannot be undone.\n\nDelete all sessions?');
-    
-    if (!doubleConfirm) return;
-    
-    // Clear all data
+    if (!confirm('WARNING: This will permanently delete all your sessions!\n\nAre you absolutely sure?\n\nTip: Export your data first to create a backup.')) return;
+    if (!confirm('Last chance! This cannot be undone.\n\nDelete all sessions?')) return;
+
     sessions = [];
-    localStorage.removeItem('sessions');
-    localStorage.removeItem('activeClockIn');
-    localStorage.removeItem('activeSessionName');
-    localStorage.removeItem('activeLocation');
-    localStorage.removeItem('expectedWorkHours');
-    
-    // Reset UI
+    ['sessions', 'activeClockIn', 'activeSessionName', 'activeLocation', 'expectedWorkHours'].forEach(k => localStorage.removeItem(k));
+
     if (clockInTime) {
         clockInTime = null;
-        if (window.notificationInterval) {
-            clearInterval(window.notificationInterval);
-        }
+        if (window.notificationInterval) clearInterval(window.notificationInterval);
         document.getElementById('status-dot').classList.remove('active');
         document.getElementById('status-label').textContent = 'No Active Session';
         document.getElementById('status-text').textContent = 'Ready to clock in';
@@ -687,11 +630,12 @@ function clearAllData() {
         document.getElementById('clock-in-btn').disabled = false;
         document.getElementById('clock-out-btn').disabled = true;
         document.getElementById('check-btn').disabled = true;
+        document.getElementById('clock-out-info').style.display = 'none';
+        document.getElementById('manual-time-section').style.display = 'block';
     }
-    
+
     renderHistory();
     renderCalendar();
-    
     alert('All data has been cleared.');
 }
 
