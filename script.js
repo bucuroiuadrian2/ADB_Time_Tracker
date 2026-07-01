@@ -183,7 +183,12 @@ function checkDuration() {
     const remaining = expectedMs - elapsed;
 
     document.getElementById('elapsed-time').textContent = formatDurationShort(elapsed);
-    document.getElementById('remaining-time').textContent = remaining > 0 ? formatDurationShort(remaining) : '00:00:00';
+    if (remaining > 0) {
+        document.getElementById('remaining-time').textContent = formatDurationShort(remaining);
+    } else {
+        const overtime = Math.abs(remaining);
+        document.getElementById('remaining-time').textContent = `+${formatDurationShort(overtime)}`;
+    }
 
     updateExpectedClockOut();
 }
