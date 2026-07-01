@@ -1,12 +1,41 @@
 {
-  "background_color": "#fff8ec",
-  "dir": "ltr",
+  "id": "/ADB_Time_Tracker/",
+  "name": "ADB Time Tracker",
+  "short_name": "TimeTracker",
+  "description": "Track work hours, monitor time spent, and keep accurate records.",
+  "start_url": "/ADB_Time_Tracker/",
+  "scope": "/ADB_Time_Tracker/",
   "display": "standalone",
-  "name": "bucuroiuadrian2.github",
   "orientation": "portrait",
-  "scope": "/",
-  "short_name": "bucuroiuadrian2.github",
-  "start_url": "https://bucuroiuadrian2.github.io/ADB_Time_Tracker/",
-  "theme_color": "#2e4261",
-  "description": "Track your work hours"
+  "theme_color": "#6CA7D9",
+  "background_color": "#FFFFFF",
+  "lang": "en",
+
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
+
+  "shortcuts": [
+    {
+      "name": "Start Tracking",
+      "short_name": "Track",
+      "url": "/ADB_Time_Tracker/"
+    }
+  ]
 }
