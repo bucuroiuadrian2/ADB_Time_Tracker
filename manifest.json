@@ -1,0 +1,12 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "bucuroiuadrian2.github",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "bucuroiuadrian2.github",
+  "start_url": "/",
+  "theme_color": "#1a2332",
+  "description": "Track your work hours"
+}
