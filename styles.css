@@ -735,3 +735,113 @@ input[type="number"]:focus {
 @media (min-width: 640px) {
     .data-management { flex-direction: row; }
 }
+/* Hours preset buttons */
+.hours-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.hours-preset-btn {
+    padding: 10px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--white);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.hours-preset-btn.active {
+    border-color: var(--accent-blue);
+    background: var(--accent-blue);
+    color: var(--white);
+}
+
+.hours-preset-btn:hover:not(.active) {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+/* Stat sublabel */
+.stat-sublabel {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* Edit modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-blue);
+    margin-bottom: 20px;
+}
+
+.modal-section {
+    margin-bottom: 16px;
+}
+
+.modal-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+/* Edit button */
+.edit-btn {
+    background: var(--accent-blue);
+    color: var(--white);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 8px;
+}
+
+.edit-btn:hover {
+    background: var(--secondary-blue);
+}
+
+.session-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.session-actions .edit-btn,
+.session-actions .delete-btn {
+    flex: 1;
+    margin: 0;
+}
