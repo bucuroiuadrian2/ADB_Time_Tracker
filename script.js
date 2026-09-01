@@ -9,6 +9,8 @@ let expectedWorkHours = 8;
 let clockInChart = null;
 let clockOutChart = null;
 let notificationShown = false;
+let editingIndex = null;
+let editLocation = 'Office';
 
 // Convert stored sessions back to Date objects
 sessions = sessions.map(s => ({
@@ -43,6 +45,15 @@ function setLocation(location) {
     document.getElementById('home-btn').classList.toggle('active', location === 'Home');
 }
 
+// Work hours preset buttons
+function setWorkHours(hours) {
+    expectedWorkHours = hours;
+    document.getElementById('work-hours-input').value = '';
+    document.querySelectorAll('.hours-preset-btn').forEach(btn => {
+        btn.classList.toggle('active', parseFloat(btn.textContent) === hours);
+    });
+}
+
 // Initialize
 window.addEventListener('DOMContentLoaded', function() {
     const customInput = document.getElementById('custom-session-name');
@@ -51,10 +62,28 @@ window.addEventListener('DOMContentLoaded', function() {
             currentSessionName = this.value || 'Custom';
         });
     }
+
     const workHoursInput = document.getElementById('work-hours-input');
     if (workHoursInput) {
-        workHoursInput.addEventListener('change', function() {
-            expectedWorkHours = parseFloat(this.value) || 8;
+        workHoursInput.addEventListener('input', function() {
+            const val = parseFloat(this.value);
+            if (!isNaN(val) && val > 0) {
+                expectedWorkHours = val;
+                // Deactivate all preset buttons when custom value is typed
+                document.querySelectorAll('.hours-preset-btn').forEach(btn => btn.classList.remove('active'));
+            }
+        });
+    }
+
+    const editNameSelect = document.getElementById('edit-session-name');
+    if (editNameSelect) {
+        editNameSelect.addEventListener('change', function() {
+            const customInput = document.getElementById('edit-custom-name');
+            if (this.value === 'Custom') {
+                customInput.style.display = 'block';
+            } else {
+                customInput.style.display = 'none';
+            }
         });
     }
 });
@@ -107,7 +136,12 @@ function clockIn() {
         clockInTime = new Date();
     }
 
-    expectedWorkHours = parseFloat(document.getElementById('work-hours-input').value) || 8;
+    // Read from custom input if no preset active
+    const customVal = parseFloat(document.getElementById('work-hours-input').value);
+    if (!isNaN(customVal) && customVal > 0) {
+        expectedWorkHours = customVal;
+    }
+
     notificationShown = false;
 
     localStorage.setItem('activeClockIn', clockInTime.toISOString());
@@ -183,6 +217,7 @@ function checkDuration() {
     const remaining = expectedMs - elapsed;
 
     document.getElementById('elapsed-time').textContent = formatDurationShort(elapsed);
+
     if (remaining > 0) {
         document.getElementById('remaining-time').textContent = formatDurationShort(remaining);
     } else {
@@ -200,7 +235,7 @@ function updateExpectedClockOut() {
     document.getElementById('expected-clock-out').textContent = formatTimeShort(expectedClockOut);
 }
 
-// Notification check (background only, no UI updates)
+// Notification check
 function startNotificationCheck() {
     if (window.notificationInterval) clearInterval(window.notificationInterval);
 
@@ -229,7 +264,7 @@ function showNotification() {
     }
 }
 
-// Restore active session after app close
+// Restore active session
 function restoreActiveSession() {
     const savedClockIn = localStorage.getItem('activeClockIn');
     const savedSessionName = localStorage.getItem('activeSessionName');
@@ -248,8 +283,12 @@ function restoreActiveSession() {
         document.getElementById('clock-in-btn').disabled = true;
         document.getElementById('clock-out-btn').disabled = false;
         document.getElementById('check-btn').disabled = false;
-        document.getElementById('work-hours-input').value = expectedWorkHours;
         document.getElementById('manual-time-section').style.display = 'none';
+
+        // Restore preset button state
+        document.querySelectorAll('.hours-preset-btn').forEach(btn => {
+            btn.classList.toggle('active', parseFloat(btn.textContent) === expectedWorkHours);
+        });
 
         updateExpectedClockOut();
         document.getElementById('clock-out-info').style.display = 'block';
@@ -306,124 +345,120 @@ function renderHistory() {
         return;
     }
 
-    list.innerHTML = sessions.slice().reverse().map((session, index) => `
-        <div class="session-card">
-            <div class="session-header">
-                <div class="session-info">
-                    <div class="session-name-badge">${session.name || 'Work'}</div>
-                    <div class="session-location-badge ${(session.location || 'Office').toLowerCase()}">${session.location || 'Office'}</div>
-                    <div class="session-date">${formatDate(session.clockIn)}</div>
+    list.innerHTML = sessions.slice().reverse().map((session, index) => {
+        const realIndex = sessions.length - 1 - index;
+        return `
+            <div class="session-card">
+                <div class="session-header">
+                    <div class="session-info">
+                        <div class="session-name-badge">${session.name || 'Work'}</div>
+                        <div class="session-location-badge ${(session.location || 'Office').toLowerCase()}">${session.location || 'Office'}</div>
+                        <div class="session-date">${formatDate(session.clockIn)}</div>
+                    </div>
+                    <div class="duration-badge">${session.duration}</div>
                 </div>
-                <div class="duration-badge">${session.duration}</div>
+                <div class="time-row">
+                    <div class="time-item">
+                        <div class="time-label">Clock In</div>
+                        <div class="time-value">${formatTimeShort(session.clockIn)}</div>
+                    </div>
+                    <div class="time-separator">→</div>
+                    <div class="time-item">
+                        <div class="time-label">Clock Out</div>
+                        <div class="time-value">${formatTimeShort(session.clockOut)}</div>
+                    </div>
+                </div>
+                <div class="session-actions">
+                    <button class="edit-btn" onclick="openEdit(${realIndex})">Edit</button>
+                    <button class="delete-btn" onclick="deleteSession(${realIndex})">Delete</button>
+                </div>
             </div>
-            <div class="time-row">
-                <div class="time-item">
-                    <div class="time-label">Clock In</div>
-                    <div class="time-value">${formatTimeShort(session.clockIn)}</div>
-                </div>
-                <div class="time-separator">→</div>
-                <div class="time-item">
-                    <div class="time-label">Clock Out</div>
-                    <div class="time-value">${formatTimeShort(session.clockOut)}</div>
-                </div>
-            </div>
-            <button class="delete-btn" onclick="deleteSession(${sessions.length - 1 - index})">Delete Session</button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
-function renderCharts() {
-    if (sessions.length === 0) return;
+// Edit session functions
+function openEdit(index) {
+    editingIndex = index;
+    const session = sessions[index];
+    editLocation = session.location || 'Office';
 
-    const recent = sessions.slice(-14);
-    const labels = recent.map(s => formatDate(s.clockIn));
-    const inTimes = recent.map(s => s.clockIn.getHours() + s.clockIn.getMinutes() / 60);
-    const outTimes = recent.map(s => s.clockOut.getHours() + s.clockOut.getMinutes() / 60);
+    const nameSelect = document.getElementById('edit-session-name');
+    const customNameInput = document.getElementById('edit-custom-name');
 
-    const allTimes = [...inTimes, ...outTimes];
-    const minTime = Math.floor(Math.min(...allTimes)) - 1;
-    const maxTime = Math.ceil(Math.max(...allTimes)) + 1;
+    if (['Work', 'Meeting', 'Break'].includes(session.name)) {
+        nameSelect.value = session.name;
+        customNameInput.style.display = 'none';
+    } else {
+        nameSelect.value = 'Custom';
+        customNameInput.style.display = 'block';
+        customNameInput.value = session.name;
+    }
 
-    if (clockInChart) clockInChart.destroy();
-    if (clockOutChart) clockOutChart.destroy();
+    document.getElementById('edit-clock-in').value = formatTimeShort(session.clockIn);
+    document.getElementById('edit-clock-out').value = formatTimeShort(session.clockOut);
 
-    const sharedOptions = {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        const h = Math.floor(context.parsed.y);
-                        const m = Math.round((context.parsed.y - h) * 60);
-                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                    }
-                }
-            }
-        },
-        scales: {
-            y: {
-                min: minTime,
-                max: maxTime,
-                ticks: {
-                    stepSize: 0.5,
-                    callback: function(value) {
-                        const h = Math.floor(value);
-                        const m = Math.round((value - h) * 60);
-                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                    }
-                },
-                grid: { color: 'rgba(0,0,0,0.05)' }
-            },
-            x: {
-                grid: { display: false },
-                ticks: { maxRotation: 45, minRotation: 45 }
-            }
-        }
-    };
+    setEditLocation(editLocation);
 
-    clockInChart = new Chart(document.getElementById('clockInChart').getContext('2d'), {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                data: inTimes,
-                borderColor: '#1e3a5f',
-                backgroundColor: 'rgba(30,58,95,0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 4,
-                pointBackgroundColor: '#1e3a5f',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointHoverRadius: 6
-            }]
-        },
-        options: sharedOptions
-    });
+    document.getElementById('edit-modal').style.display = 'flex';
+}
 
-    clockOutChart = new Chart(document.getElementById('clockOutChart').getContext('2d'), {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                data: outTimes,
-                borderColor: '#2c5282',
-                backgroundColor: 'rgba(44,82,130,0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 4,
-                pointBackgroundColor: '#2c5282',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointHoverRadius: 6
-            }]
-        },
-        options: sharedOptions
-    });
+function setEditLocation(location) {
+    editLocation = location;
+    document.getElementById('edit-office-btn').classList.toggle('active', location === 'Office');
+    document.getElementById('edit-home-btn').classList.toggle('active', location === 'Home');
+}
+
+function saveEdit() {
+    if (editingIndex === null) return;
+
+    const session = sessions[editingIndex];
+    const nameSelect = document.getElementById('edit-session-name');
+    const customNameInput = document.getElementById('edit-custom-name');
+    const clockInVal = document.getElementById('edit-clock-in').value;
+    const clockOutVal = document.getElementById('edit-clock-out').value;
+
+    if (!clockInVal || !clockOutVal) {
+        alert('Please fill in both clock in and clock out times.');
+        return;
+    }
+
+    // Update name
+    if (nameSelect.value === 'Custom') {
+        session.name = customNameInput.value || 'Custom';
+    } else {
+        session.name = nameSelect.value;
+    }
+
+    // Update location
+    session.location = editLocation;
+
+    // Update times (keep original date, only change time)
+    const [inH, inM] = clockInVal.split(':');
+    const [outH, outM] = clockOutVal.split(':');
+
+    const originalDate = new Date(session.clockIn);
+    session.clockIn = new Date(originalDate.getFullYear(), originalDate.getMonth(), originalDate.getDate(), parseInt(inH), parseInt(inM), 0);
+    session.clockOut = new Date(originalDate.getFullYear(), originalDate.getMonth(), originalDate.getDate(), parseInt(outH), parseInt(outM), 0);
+
+    // Handle midnight crossing
+    if (session.clockOut < session.clockIn) {
+        session.clockOut.setDate(session.clockOut.getDate() + 1);
+    }
+
+    // Recalculate duration
+    const duration = session.clockOut - session.clockIn;
+    session.duration = formatDuration(duration);
+
+    localStorage.setItem('sessions', JSON.stringify(sessions));
+    closeEdit();
+    renderHistory();
+    renderCalendar();
+}
+
+function closeEdit() {
+    editingIndex = null;
+    document.getElementById('edit-modal').style.display = 'none';
 }
 
 function deleteSession(index) {
@@ -485,9 +520,31 @@ function renderCalendar() {
     if (selectedDate) renderCalendarSessions();
 }
 
+// Only count days for the currently displayed month
 function updateLocationStats() {
-    document.getElementById('office-days').textContent = sessions.filter(s => s.location === 'Office').length;
-    document.getElementById('home-days').textContent = sessions.filter(s => s.location === 'Home').length;
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+
+    const monthSessions = sessions.filter(s => {
+        const d = new Date(s.clockIn);
+        return d.getFullYear() === year && d.getMonth() === month;
+    });
+
+    // Count unique days per location in this month
+    const officeDays = new Set(
+        monthSessions
+            .filter(s => s.location === 'Office')
+            .map(s => new Date(s.clockIn).getDate())
+    ).size;
+
+    const homeDays = new Set(
+        monthSessions
+            .filter(s => s.location === 'Home')
+            .map(s => new Date(s.clockIn).getDate())
+    ).size;
+
+    document.getElementById('office-days').textContent = officeDays;
+    document.getElementById('home-days').textContent = homeDays;
 }
 
 function selectDate(dateString) {
@@ -542,11 +599,13 @@ function renderCalendarSessions() {
 
 function previousMonth() {
     currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1);
+    selectedDate = null;
     renderCalendar();
 }
 
 function nextMonth() {
     currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
+    selectedDate = null;
     renderCalendar();
 }
 
@@ -642,6 +701,100 @@ function clearAllData() {
     renderHistory();
     renderCalendar();
     alert('All data has been cleared.');
+}
+
+function renderCharts() {
+    if (sessions.length === 0) return;
+
+    const recent = sessions.slice(-14);
+    const labels = recent.map(s => formatDate(s.clockIn));
+    const inTimes = recent.map(s => s.clockIn.getHours() + s.clockIn.getMinutes() / 60);
+    const outTimes = recent.map(s => s.clockOut.getHours() + s.clockOut.getMinutes() / 60);
+
+    const allTimes = [...inTimes, ...outTimes];
+    const minTime = Math.floor(Math.min(...allTimes)) - 1;
+    const maxTime = Math.ceil(Math.max(...allTimes)) + 1;
+
+    if (clockInChart) clockInChart.destroy();
+    if (clockOutChart) clockOutChart.destroy();
+
+    const sharedOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const h = Math.floor(context.parsed.y);
+                        const m = Math.round((context.parsed.y - h) * 60);
+                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                min: minTime,
+                max: maxTime,
+                ticks: {
+                    stepSize: 0.5,
+                    callback: function(value) {
+                        const h = Math.floor(value);
+                        const m = Math.round((value - h) * 60);
+                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    }
+                },
+                grid: { color: 'rgba(0,0,0,0.05)' }
+            },
+            x: {
+                grid: { display: false },
+                ticks: { maxRotation: 45, minRotation: 45 }
+            }
+        }
+    };
+
+    clockInChart = new Chart(document.getElementById('clockInChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                data: inTimes,
+                borderColor: '#1e3a5f',
+                backgroundColor: 'rgba(30,58,95,0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: '#1e3a5f',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 6
+            }]
+        },
+        options: sharedOptions
+    });
+
+    clockOutChart = new Chart(document.getElementById('clockOutChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                data: outTimes,
+                borderColor: '#2c5282',
+                backgroundColor: 'rgba(44,82,130,0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: '#2c5282',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 6
+            }]
+        },
+        options: sharedOptions
+    });
 }
 
 // Initialize
